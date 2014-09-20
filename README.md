@@ -4,6 +4,7 @@ Find three issues on Busbud.com and write the automated regression tests that re
 
 ## Functional requirements
 
+* Tests are run on the command line using `npm test`
 * Tests are run against a configurable host, with `www.busbud.com` as the default
 * Tests can be configured to run various browser and OS combinations against a testing service (SauceLabs or BrowserStack), at a minimum the following should be included
   * IE10, Windows 8
@@ -13,7 +14,7 @@ Find three issues on Busbud.com and write the automated regression tests that re
 
 ## Non-functional requirements
 
-* Tests are written in javascript
+* Tests are written in javascript, using NodeJS
 * Tests are written against a BDD framework like `mocha`
 * Tests cases describe expected behavior
 * Style guide: https://github.com/busbud/js-style-guide
