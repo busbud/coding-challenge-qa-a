@@ -23,6 +23,14 @@ Find three issues on Busbud.com and write the automated regression tests that re
 * Tests run against mobile browsers
 * Tests capture screenshots of failures
 
+## What we're looking for
+
+1. Interesting or impactful issues
+1. Using high-quality existing libraries or small amounts of custom code
+1. Showing your work through your commit history
+1. Polish
+1. Pride in craftsmanship
+
 ## References
 
 * https://docs.saucelabs.com/tutorials/node-js/
