@@ -16,5 +16,5 @@
 
 ## USAGE
 
-* npm test
+* BS_NAME='browser_stack_name' BS_KEY='browser_stack_key' npm test
 
