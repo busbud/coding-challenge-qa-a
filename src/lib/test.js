@@ -3,10 +3,10 @@
 var assert    = require('assert');
 var fs        = require('fs');
 
+var mocha     = require('mocha');
 var webdriver = require('selenium-webdriver');
 var async     = require('async');
 var colors    = require('colors');
-var rand_str  = require("randomstring");
 var _         = require('lodash'); //not yet used
 
 // Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
@@ -16,13 +16,23 @@ process.on('SIGINT', function() {
   process.exit();
 });
 
-// Test Suite Variables */
+// Test Suite Variables
 var HOST = 'http://busbud.com';
 var capabilities = { 'browserName' : 'chrome' }
 var USERNAME = process.env.SAUCE_NAME || "";
 var PASSWORD = process.env.SAUCE_KEY || "";
+var d     = new Date;
+var year  = d.getFullYear();
+var month = d.getMonth() + 1;
+var day   = d.getDate();
+var now   = month + '-' + day +'-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
 
-// Test Suite Setup
+// Common Functions
+function strEndsWith(str, suffix) {
+  return str.toLowerCase().match(suffix.toLowerCase()+"$")==suffix.toLowerCase();
+}
+
+
 before(function(done) {
   this.timeout(220000);
 
@@ -37,7 +47,7 @@ before(function(done) {
     if (driver) {
       driver.takeScreenshot().then(function(screenshot) {
         var filepath = './error/screens/';
-        var filename = 'Suite-Setup-' + rand_str.generate(3) + '.png';
+        var filename = 'Suite-Setup-' + now + '.png';
         fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));    
       });
     }
@@ -49,46 +59,68 @@ before(function(done) {
 });
 
 
-
 // Tests
 describe('Routes', function() {
   
-  it('should not contain trip durations in fractions', function(done) {
+  it('should not contain trip durations in fractions of hours', function(done) {
     this.timeout(10000);
 
     TOR_TO_MTL = 'https://secure.busbud.com/en/bus-schedules/Toronto,Ontario,Canada/Montreal,Quebec,Canada';
     
     driver.get(TOR_TO_MTL).then(function() {
       driver.findElements(webdriver.By.className('duration')).then(function(durations) {
-        async.forEach(durations, function(duration, callback) {
+        async.forEach(durations, function(duration, step) {
         
           duration.isDisplayed().then(function() {
             return duration.getAttribute('innerHTML');
           }).then(function(duration_text) {
-            console.log(duration_text.indexOf('.'));
-            assert.equal(duration_text.indexOf('.'), -1);
-            callback();
+            assert(duration_text.indexOf('.') === -1, duration_text + ' contained a fraction');
+            step();
           });
         });
       });
     }).then(done);
   });
   
-  it('should render all destination names correctly', function(done) {
+  it('should not render destination names with unexpected characters', function(done) {
     this.timeout(10000);
+    
+    var today   = year + '-' + month + '-' + day;
+    PRA_TO_MUN  = 'https://secure.busbud.com/en/bus-schedules/Prague,HlavniMestoPraha,CzechRepublic/Munich,Bavaria,Germany#date=';
 
-    PRA_TO_MUN = 'https://secure.busbud.com/en/bus-schedules/Prague,HlavniMestoPraha,CzechRepublic/Munich,Bavaria,Germany#date=2014-09-24';
-
-    driver.get(PRA_TO_MUN).then(function() {
+    driver.get(PRA_TO_MUN + today).then(function() {
       driver.findElements(webdriver.By.className('location')).then(function(locations) {
-        async.forEach(locations, function(loc, callback) {
+        async.forEach(locations, function(loc, step) {
           
           loc.isDisplayed().then(function() {
             return loc.getAttribute('innerHTML');
           }).then(function(location_text) {
-            console.log(location_text);
-            assert.equal(location_text.indexOf('_'), -1);
-            callback();
+            assert(location_text.indexOf('_') === -1, location_text + ' had one or more unexpected _ characters');
+            step();
+          });
+        });
+      });
+    }).then(done);
+  });
+ 
+  it('destinations should not end with a period', function(done) {
+    this.timeout(20000);
+
+    var today   = year + '-' + month + '-' + day;
+    WAS_TO_TOR  = 'https://secure.busbud.com/en/bus-schedules/Washington,DC,UnitedStates/NewYork,NewYork,UnitedStates#date='
+
+    driver.get(WAS_TO_TOR + today).then(function() {
+      driver.findElements(webdriver.By.className('location')).then(function(locations) {
+        async.forEach(locations, function(loc, step) {
+
+          loc.isDisplayed().then(function() {
+            return loc.getAttribute('innerHTML');
+          }).then(function(location_text) {
+            loc_length = location_text.length;
+            if (!(strEndsWith(location_text, ' st.') || (strEndsWith(location_text, ' ave.')))) {
+              assert(location_text.substring(loc_length - 1) !== '.', location_text + ' ended in an unexpected period');
+            }
+            step();
           });
         });
       });
@@ -96,7 +128,6 @@ describe('Routes', function() {
   });
 
 });
-
 
 // Test Suite Teardown
 after(function(done) {
