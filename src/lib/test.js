@@ -4,7 +4,7 @@ var assert    = require('assert');
 var fs        = require('fs');
 
 var mocha     = require('mocha');
-var webdriver = require('selenium-webdriver');
+var webdriver = require('selenium-webdriver');     // comment if using browserstack
 //var webdriver = require('browserstack-webdriver'); // uncommet to use browserstack
 var async     = require('async');
 var colors    = require('colors');
@@ -21,15 +21,16 @@ process.on('SIGINT', function() {
 
 // Test Suite Variables
 var HOST  = conf['host'] || 'http://busbud.com';
-// TODO: capabilities can't be directly sourced from conf file since it needs environment variables
+// TODO: capabilities can't be directly sourced from json conf file since it needs environment variables
 var capabilities = { 'browserName' : 'chrome' };
-var USERNAME = process.env.BS_NAME || "";
-var PASSWORD = process.env.BS_KEY || "";
+var NAME  = process.env.BS_NAME || "";
+var KEY   = process.env.BS_KEY || "";
+var TC_TIMEOUT = 15000;
 var d     = new Date;
 var year  = d.getFullYear();
 var month = d.getMonth() + 1;
 var day   = d.getDate();
-var now   = month + '-' + day +'-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
+var TODAY = year + '-' + month + '-' + day;
 
 // Common Functions
 function strEndsWith(str, suffix) {
@@ -46,14 +47,15 @@ before(function(done) {
     .build();
 
   // Catch Error in SE Driver Launch (Attempt Screenshot if Possible)
-  // TODO: This still runs after the tests have begun. It shouldn't....
+  // FIXME: This still runs after the tests have begun. It shouldn't (or it should add the testcase name)
   process.on('uncaughtException', function(err) {
     console.log('\nError setting up test suite... '.red + err);
     
     if (driver) {
       driver.takeScreenshot().then(function(screenshot) {
-        var filepath = './error/screens/';
-        var filename = 'Suite-Setup-' + now + '.png';
+        var now       = month + '-' + day +'-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
+        var filepath  = './error/screens/';
+        var filename  = 'suite-setup-' + now + '.png';
         fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));    
       });
     }
@@ -69,7 +71,7 @@ before(function(done) {
 describe('Routes', function() {
   
   it('should not contain trip durations in complicated fractions of hours', function(done) {
-    this.timeout(10000);
+    this.timeout(TC_TIMEOUT);
 
     TOR_TO_MTL = 'https://secure.busbud.com/en/bus-schedules/Toronto,Ontario,Canada/Montreal,Quebec,Canada';
     
@@ -83,7 +85,7 @@ describe('Routes', function() {
             var dot_location = duration_text.indexOf('.');
             var next_character = duration_text.substring(dot_location + 1, dot_location + 2);
             if (dot_location !== -1) {
-              assert(next_character === "5", "'" + duration_text + "'" + ' contained a fraction that 60 minutes is not divisible by');
+              assert(next_character === "5", '"' + duration_text + '"' + ' contained a fraction that 60 minutes is not divisible by');
             }
             step();
           });
@@ -93,20 +95,20 @@ describe('Routes', function() {
   });
   
   it('should not render destination names with unexpected characters', function(done) {
-    this.timeout(10000);
+    this.timeout(TC_TIMEOUT);
 
     // TODO: run this test for a few consecutive days: today, tomorrow, etc (wrap everything in a forEach???)
-    var today   = year + '-' + month + '-' + day;
     PRA_TO_MUN  = 'https://secure.busbud.com/en/bus-schedules/Prague,HlavniMestoPraha,CzechRepublic/Munich,Bavaria,Germany#date=';
 
-    driver.get(PRA_TO_MUN + today).then(function() {
+    driver.get(PRA_TO_MUN + TODAY).then(function() {
       driver.findElements(webdriver.By.className('location')).then(function(locations) {
         async.forEach(locations, function(loc, step) {
           
           loc.isDisplayed().then(function() {
             return loc.getAttribute('innerHTML');
           }).then(function(location_text) {
-            assert(location_text.indexOf('_') === -1, "'" + location_text + "'" + ' had one or more unexpected _ characters');
+            var underscore_location = location_text.indexOf('_')
+            assert(underscore_location === -1, '"' + location_text + '"' + ' had one or more unexpected _ characters');
             step();
           });
         });
@@ -115,21 +117,21 @@ describe('Routes', function() {
   });
  
   it('destinations should not end with a period', function(done) {
-    this.timeout(20000);
+    this.timeout(TC_TIMEOUT);
 
-    var today   = year + '-' + month + '-' + day;
-    WAS_TO_TOR  = 'https://secure.busbud.com/en/bus-schedules/Washington,DC,UnitedStates/NewYork,NewYork,UnitedStates#date='
+    WASH_TO_TOR  = 'https://secure.busbud.com/en/bus-schedules/Washington,DC,UnitedStates/NewYork,NewYork,UnitedStates#date='
 
-    driver.get(WAS_TO_TOR + today).then(function() {
+    driver.get(WASH_TO_TOR + TODAY).then(function() {
       driver.findElements(webdriver.By.className('location')).then(function(locations) {
         async.forEach(locations, function(loc, step) {
 
           loc.isDisplayed().then(function() {
             return loc.getAttribute('innerHTML');
           }).then(function(location_text) {
-            loc_length = location_text.length;
+            var loc_length = location_text.length;
+            var last_character = location_text.substring(loc_length - 1);
             if (!(strEndsWith(location_text, ' st.') || (strEndsWith(location_text, ' ave.')))) {
-              assert(location_text.substring(loc_length - 1) !== '.', "'" + location_text + "'" + ' ended in an unexpected period');
+              assert(last_character !== '.', '"' + location_text + '"' + ' ended in an unexpected period');
             }
             step();
           });
