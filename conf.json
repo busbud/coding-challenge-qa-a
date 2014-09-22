@@ -1,0 +1,6 @@
+{
+  "host" : "http://busbud.com",
+  "capabilities": {
+    "browserName" : "chrome"
+  }
+}
