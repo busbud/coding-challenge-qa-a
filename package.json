@@ -1,0 +1,18 @@
+{
+  "name": "busbud",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "test": "mocha src/lib/test.js"
+  },
+  "dependencies": {
+    "mocha": "*",
+    "assert": "*",
+    "fs": "*",
+    "webdriver": "*",
+    "async": "*",
+    "colors": "*",
+    "randomstring": "*",
+    "lodash": "*"
+  }
+}
