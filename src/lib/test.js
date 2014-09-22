@@ -5,6 +5,7 @@ var fs        = require('fs');
 
 var mocha     = require('mocha');
 var webdriver = require('selenium-webdriver');
+//var webdriver = require('browserstack-webdriver'); // uncommet to use browserstack
 var async     = require('async');
 var colors    = require('colors');
 var _         = require('lodash'); //not yet used
@@ -19,10 +20,11 @@ process.on('SIGINT', function() {
 });
 
 // Test Suite Variables
-var HOST = conf['host'] || 'http://busbud.com';
-var capabilities = conf['capabilities'] || { 'browserName' : 'chrome' };
-var USERNAME = process.env.SAUCE_NAME || "";
-var PASSWORD = process.env.SAUCE_KEY || "";
+var HOST  = conf['host'] || 'http://busbud.com';
+// TODO: capabilities can't be directly sourced from conf file since it needs environment variables
+var capabilities = { 'browserName' : 'chrome' };
+var USERNAME = process.env.BS_NAME || "";
+var PASSWORD = process.env.BS_KEY || "";
 var d     = new Date;
 var year  = d.getFullYear();
 var month = d.getMonth() + 1;
@@ -39,6 +41,7 @@ before(function(done) {
   this.timeout(220000);
 
   driver = new webdriver.Builder()
+    //.usingServer('http://hub.browserstack.com/wd/hub') // uncomment to use browserstack
     .withCapabilities(capabilities)
     .build();
 
@@ -77,8 +80,11 @@ describe('Routes', function() {
           duration.isDisplayed().then(function() {
             return duration.getAttribute('innerHTML');
           }).then(function(duration_text) {
-            //TODO: fractions may be okay if they're .0, .5, .25, .75. In these cases, pass. Else, fail
-            assert(duration_text.indexOf('.') === -1, "'" + duration_text + "'" + ' contained a fraction that 60 minutes is not divisible by');
+            var dot_location = duration_text.indexOf('.');
+            var next_character = duration_text.substring(dot_location + 1, dot_location + 2);
+            if (dot_location !== -1) {
+              assert(next_character === "5", "'" + duration_text + "'" + ' contained a fraction that 60 minutes is not divisible by');
+            }
             step();
           });
         });
