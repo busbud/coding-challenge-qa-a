@@ -9,6 +9,8 @@ var async     = require('async');
 var colors    = require('colors');
 var _         = require('lodash'); //not yet used
 
+var conf      = require('../../conf.json');
+
 // Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
 process.on('SIGINT', function() {
   console.log('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red)
@@ -17,8 +19,8 @@ process.on('SIGINT', function() {
 });
 
 // Test Suite Variables
-var HOST = 'http://busbud.com';
-var capabilities = { 'browserName' : 'chrome' }
+var HOST = conf['host'] || 'http://busbud.com';
+var capabilities = conf['capabilities'] || { 'browserName' : 'chrome' };
 var USERNAME = process.env.SAUCE_NAME || "";
 var PASSWORD = process.env.SAUCE_KEY || "";
 var d     = new Date;
@@ -41,8 +43,9 @@ before(function(done) {
     .build();
 
   // Catch Error in SE Driver Launch (Attempt Screenshot if Possible)
+  // TODO: This still runs after the tests have begun. It shouldn't....
   process.on('uncaughtException', function(err) {
-    console.log('\nError Setting up Test Suite... '.red + err);
+    console.log('\nError setting up test suite... '.red + err);
     
     if (driver) {
       driver.takeScreenshot().then(function(screenshot) {
@@ -62,7 +65,7 @@ before(function(done) {
 // Tests
 describe('Routes', function() {
   
-  it('should not contain trip durations in fractions of hours', function(done) {
+  it('should not contain trip durations in complicated fractions of hours', function(done) {
     this.timeout(10000);
 
     TOR_TO_MTL = 'https://secure.busbud.com/en/bus-schedules/Toronto,Ontario,Canada/Montreal,Quebec,Canada';
@@ -74,7 +77,8 @@ describe('Routes', function() {
           duration.isDisplayed().then(function() {
             return duration.getAttribute('innerHTML');
           }).then(function(duration_text) {
-            assert(duration_text.indexOf('.') === -1, duration_text + ' contained a fraction');
+            //TODO: fractions may be okay if they're .0, .5, .25, .75. In these cases, pass. Else, fail
+            assert(duration_text.indexOf('.') === -1, "'" + duration_text + "'" + ' contained a fraction that 60 minutes is not divisible by');
             step();
           });
         });
@@ -84,7 +88,8 @@ describe('Routes', function() {
   
   it('should not render destination names with unexpected characters', function(done) {
     this.timeout(10000);
-    
+
+    // TODO: run this test for a few consecutive days: today, tomorrow, etc (wrap everything in a forEach???)
     var today   = year + '-' + month + '-' + day;
     PRA_TO_MUN  = 'https://secure.busbud.com/en/bus-schedules/Prague,HlavniMestoPraha,CzechRepublic/Munich,Bavaria,Germany#date=';
 
@@ -95,7 +100,7 @@ describe('Routes', function() {
           loc.isDisplayed().then(function() {
             return loc.getAttribute('innerHTML');
           }).then(function(location_text) {
-            assert(location_text.indexOf('_') === -1, location_text + ' had one or more unexpected _ characters');
+            assert(location_text.indexOf('_') === -1, "'" + location_text + "'" + ' had one or more unexpected _ characters');
             step();
           });
         });
@@ -118,7 +123,7 @@ describe('Routes', function() {
           }).then(function(location_text) {
             loc_length = location_text.length;
             if (!(strEndsWith(location_text, ' st.') || (strEndsWith(location_text, ' ave.')))) {
-              assert(location_text.substring(loc_length - 1) !== '.', location_text + ' ended in an unexpected period');
+              assert(location_text.substring(loc_length - 1) !== '.', "'" + location_text + "'" + ' ended in an unexpected period');
             }
             step();
           });
