@@ -12,7 +12,6 @@
     "webdriver": "*",
     "async": "*",
     "colors": "*",
-    "randomstring": "*",
     "lodash": "*"
   }
 }
