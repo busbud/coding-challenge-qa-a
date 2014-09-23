@@ -11,6 +11,7 @@ var colors    = require('colors');
 var _         = require('lodash'); //not yet used
 
 var conf      = require('../../conf.json');
+var locations = require('../../locations.json');
 
 // Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
 process.on('SIGINT', function() {
@@ -21,16 +22,17 @@ process.on('SIGINT', function() {
 
 // Test Suite Variables
 var HOST  = conf['host'] || 'http://busbud.com';
-// TODO: capabilities can't be directly sourced from json conf file since it needs environment variables
-var capabilities = { 'browserName' : 'chrome' };
-var NAME  = process.env.BS_NAME || "";
-var KEY   = process.env.BS_KEY || "";
+// TODO: iterate through capabilities array and test each dictionary
+var capabilities = { "browserName": "chrome" } //conf['capabilities'][0];
+capabilities["browserstack.user"] = process.env.BS_NAME || "";
+capabilities["browserstack.key"]  = process.env.BS_KEY || "";
 var TC_TIMEOUT = 15000;
 var d     = new Date;
 var year  = d.getFullYear();
 var month = d.getMonth() + 1;
 var day   = d.getDate();
 var TODAY = year + '-' + month + '-' + day;
+var SCHEDULES = "https://secure.busbud.com/en/bus-schedules/";
 
 // Common Functions
 function strEndsWith(str, suffix) {
@@ -73,9 +75,9 @@ describe('Routes', function() {
   it('should not contain trip durations in complicated fractions of hours', function(done) {
     this.timeout(TC_TIMEOUT);
 
-    TOR_TO_MTL = 'https://secure.busbud.com/en/bus-schedules/Toronto,Ontario,Canada/Montreal,Quebec,Canada';
+    var TRIP = SCHEDULES + locations["TOR"] + '/' + locations["MTL"]
     
-    driver.get(TOR_TO_MTL).then(function() {
+    driver.get(TRIP).then(function() {
       driver.findElements(webdriver.By.className('duration')).then(function(durations) {
         async.forEach(durations, function(duration, step) {
         
@@ -98,9 +100,9 @@ describe('Routes', function() {
     this.timeout(TC_TIMEOUT);
 
     // TODO: run this test for a few consecutive days: today, tomorrow, etc (wrap everything in a forEach???)
-    PRA_TO_MUN  = 'https://secure.busbud.com/en/bus-schedules/Prague,HlavniMestoPraha,CzechRepublic/Munich,Bavaria,Germany#date=';
+    var TRIP = SCHEDULES + locations['PRA'] + '/' + locations['MUN'] + '#date=';
 
-    driver.get(PRA_TO_MUN + TODAY).then(function() {
+    driver.get(TRIP + TODAY).then(function() {
       driver.findElements(webdriver.By.className('location')).then(function(locations) {
         async.forEach(locations, function(loc, step) {
           
@@ -119,9 +121,9 @@ describe('Routes', function() {
   it('destinations should not end with a period', function(done) {
     this.timeout(TC_TIMEOUT);
 
-    WASH_TO_TOR  = 'https://secure.busbud.com/en/bus-schedules/Washington,DC,UnitedStates/NewYork,NewYork,UnitedStates#date='
+    var TRIP = SCHEDULES + locations['WASH'] + '/' + locations['NYC'] + '#date='
 
-    driver.get(WASH_TO_TOR + TODAY).then(function() {
+    driver.get(TRIP + TODAY).then(function() {
       driver.findElements(webdriver.By.className('location')).then(function(locations) {
         async.forEach(locations, function(loc, step) {
 
