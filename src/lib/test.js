@@ -19,7 +19,7 @@ if (conf['local']) {
 }
 
 // Imported Variables
-var HOST    = conf['host'] || 'http://busbud.com';
+var HOST = conf['host'] || 'http://busbud.com';
 if (conf['local']) {
   var capabilities = { "browserName": "chrome" };
 } else {
@@ -50,7 +50,7 @@ function strEndsWith(str, suffix) {
 
 // Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
 process.on('SIGINT', function() {
-  console.log('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red)
+  console.log('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red);
   driver.quit();
   process.exit();
 });
@@ -60,9 +60,9 @@ before(function(done) {
   this.timeout(START_TIMEOUT);
 
   if (conf['local']) {
-  driver = new webdriver.Builder()
-    .withCapabilities(capabilities)
-    .build();
+    driver = new webdriver.Builder()
+      .withCapabilities(capabilities)
+      .build();
   } else {
     driver = new webdriver.Builder()
       .usingServer('http://hub.browserstack.com/wd/hub')
@@ -96,7 +96,7 @@ describe('Routes', function() {
   
   it('should not contain trip durations in complicated fractions of hours', function(done) {
     this.timeout(RUN_TIMEOUT);
-
+    
     var TRIP = SCHEDULES + locations["TOR"] + '/' + locations["MTL"]
     
     driver.get(TRIP).then(function() {
@@ -131,7 +131,7 @@ describe('Routes', function() {
           loc.isDisplayed().then(function() {
             return loc.getAttribute('innerHTML');
           }).then(function(location_text) {
-            var underscore_location = location_text.indexOf('_')
+            var underscore_location = location_text.indexOf('_');
             assert(underscore_location === -1, '"' + location_text + '"' + ' had one or more unexpected _ characters');
             step();
           });
@@ -142,8 +142,8 @@ describe('Routes', function() {
  
   it('destinations should not end with a period', function(done) {
     this.timeout(RUN_TIMEOUT);
-
-    var TRIP = SCHEDULES + locations['WASH'] + '/' + locations['NYC'] + '#date='
+    
+    var TRIP = SCHEDULES + locations['WASH'] + '/' + locations['NYC'] + '#date=';
 
     driver.get(TRIP + TODAY).then(function() {
       driver.findElements(webdriver.By.className('location')).then(function(locations) {

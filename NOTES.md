@@ -1,7 +1,7 @@
 ##ISSUES
 
-* Concurrency still behavious suspiciously at times...
-* Some parts of the code is ugly
+* Concurrency can behave suspiciously if any small tweaks are made...
+* Some parts of the code needs a cleanup
 * Not catching and reacting to failures well (assert may not be best library)
 * Violating Style Guide
 * - Not using Loadsh (does this apply?)
@@ -10,8 +10,7 @@
 
 ## TODO
 
-* find way to pass site variable as command line arg (or another way)
-* link with browser-stack or saucelabs
+* Find way to iterate test over every platform/browser in capabilities
 * Find a better way to handle selenium timeouts
 
 ## USAGE
