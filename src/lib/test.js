@@ -4,8 +4,6 @@ var assert    = require('assert');
 var fs        = require('fs');
 
 var mocha     = require('mocha');
-var webdriver = require('selenium-webdriver');     // comment if using browserstack
-//var webdriver = require('browserstack-webdriver'); // uncommet to use browserstack
 var async     = require('async');
 var colors    = require('colors');
 var _         = require('lodash'); //not yet used
@@ -13,20 +11,30 @@ var _         = require('lodash'); //not yet used
 var conf      = require('../../conf.json');
 var locations = require('../../locations.json');
 
-// Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
-process.on('SIGINT', function() {
-  console.log('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red)
-  driver.quit();
-  process.exit();
-});
+// Choose Local or Remote Webdriver (as per conf config)
+if (conf['local']) {
+  var webdriver = require('selenium-webdriver');
+} else {
+  var webdriver = require('browserstack-webdriver');
+}
 
-// Test Suite Variables
-var HOST  = conf['host'] || 'http://busbud.com';
-// TODO: iterate through capabilities array and test each dictionary
-var capabilities = { "browserName": "chrome" } //conf['capabilities'][0];
-capabilities["browserstack.user"] = process.env.BS_NAME || "";
-capabilities["browserstack.key"]  = process.env.BS_KEY || "";
-var TC_TIMEOUT = 15000;
+// Imported Variables
+var HOST    = conf['host'] || 'http://busbud.com';
+if (conf['local']) {
+  var capabilities = { "browserName": "chrome" };
+} else {
+  // TODO: Find way to iterate through capabilities (using first index, for now)
+  var capabilities = conf['capabilities'][0];
+  capabilities["browserstack.user"] = process.env.BS_NAME || "";
+  capabilities["browserstack.key"]  = process.env.BS_KEY || "";
+}
+
+// Timeouts
+var START_TIMEOUT = 20000;
+var RUN_TIMEOUT   = 15000;
+var STOP_TIMEOUT  = 5000;
+
+// Schedules, Date & Time
 var d     = new Date;
 var year  = d.getFullYear();
 var month = d.getMonth() + 1;
@@ -40,13 +48,27 @@ function strEndsWith(str, suffix) {
 }
 
 
-before(function(done) {
-  this.timeout(220000);
+// Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
+process.on('SIGINT', function() {
+  console.log('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red)
+  driver.quit();
+  process.exit();
+});
 
+
+before(function(done) {
+  this.timeout(START_TIMEOUT);
+
+  if (conf['local']) {
   driver = new webdriver.Builder()
-    //.usingServer('http://hub.browserstack.com/wd/hub') // uncomment to use browserstack
     .withCapabilities(capabilities)
     .build();
+  } else {
+    driver = new webdriver.Builder()
+      .usingServer('http://hub.browserstack.com/wd/hub')
+      .withCapabilities(capabilities)
+      .build();
+  }
 
   // Catch Error in SE Driver Launch (Attempt Screenshot if Possible)
   // FIXME: This still runs after the tests have begun. It shouldn't (or it should add the testcase name)
@@ -73,7 +95,7 @@ before(function(done) {
 describe('Routes', function() {
   
   it('should not contain trip durations in complicated fractions of hours', function(done) {
-    this.timeout(TC_TIMEOUT);
+    this.timeout(RUN_TIMEOUT);
 
     var TRIP = SCHEDULES + locations["TOR"] + '/' + locations["MTL"]
     
@@ -97,7 +119,7 @@ describe('Routes', function() {
   });
   
   it('should not render destination names with unexpected characters', function(done) {
-    this.timeout(TC_TIMEOUT);
+    this.timeout(RUN_TIMEOUT);
 
     // TODO: run this test for a few consecutive days: today, tomorrow, etc (wrap everything in a forEach???)
     var TRIP = SCHEDULES + locations['PRA'] + '/' + locations['MUN'] + '#date=';
@@ -119,7 +141,7 @@ describe('Routes', function() {
   });
  
   it('destinations should not end with a period', function(done) {
-    this.timeout(TC_TIMEOUT);
+    this.timeout(RUN_TIMEOUT);
 
     var TRIP = SCHEDULES + locations['WASH'] + '/' + locations['NYC'] + '#date='
 
@@ -146,7 +168,7 @@ describe('Routes', function() {
 
 // Test Suite Teardown
 after(function(done) {
-  this.timeout(5000);
+  this.timeout(STOP_TIMEOUT);
 
   process.on('uncaughtException', function(err) {
     driver.quit();
