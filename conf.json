@@ -1,28 +1,33 @@
 {
   "host" : "http://busbud.com",
   "local" : true,
-  "capabilities": [
+  "remote_settings": [
     {
       "os": "Windows",
       "os_version": "8",
-      "browser": "IE",
+      "browserName": "IE",
       "browser_version": "10.0",
       "resolution": "1024x768"
-    }, 
+    },
     {
       "os": "Windows",
       "os_version": "8",
-      "browser": "chrome",
+      "browserName": "chrome",
       "resolution": "1024x768"
-    }, 
+    },
     {
       "os": "OS X",
       "resolution": "1024x768"
-    }, 
+    },
     {
       "platform" : "MAC",
       "browserName": "iPhone",
       "device": "iPhone 5"
+    }
+  ],
+  "local_settings" : [
+    {
+      "browserName": "chrome"
     }
   ]
 }
