@@ -3,31 +3,18 @@
 var assert    = require('assert');
 var fs        = require('fs');
 
-var mocha     = require('mocha');
 var async     = require('async');
 var colors    = require('colors');
-var _         = require('lodash'); //not yet used
+var sleep     = require('sleep');
+var _         = require('lodash'); //not used
 
 var conf      = require('../../conf.json');
 var locations = require('../../locations.json');
-
-// Choose Local or Remote Webdriver (as per conf config)
-if (conf['local']) {
-  var webdriver = require('selenium-webdriver');
-} else {
-  var webdriver = require('browserstack-webdriver');
-}
+var webdriver = require('../../driver.js');
+var sessions  = require('../../capabilities.js');
 
 // Imported Variables
 var HOST = conf['host'] || 'http://busbud.com';
-if (conf['local']) {
-  var capabilities = { "browserName": "chrome" };
-} else {
-  // TODO: Find way to iterate through capabilities (using first index, for now)
-  var capabilities = conf['capabilities'][0];
-  capabilities["browserstack.user"] = process.env.BS_NAME || "";
-  capabilities["browserstack.key"]  = process.env.BS_KEY || "";
-}
 
 // Timeouts
 var START_TIMEOUT = 20000;
@@ -40,6 +27,7 @@ var year  = d.getFullYear();
 var month = d.getMonth() + 1;
 var day   = d.getDate();
 var TODAY = year + '-' + month + '-' + day;
+var MONTH = year + '-' + month + '-';
 var SCHEDULES = "https://secure.busbud.com/en/bus-schedules/";
 
 // Common Functions
@@ -61,110 +49,109 @@ before(function(done) {
 
   if (conf['local']) {
     driver = new webdriver.Builder()
-      .withCapabilities(capabilities)
-      .build();
+    .withCapabilities(sessions[0])
+    .build();
   } else {
     driver = new webdriver.Builder()
-      .usingServer('http://hub.browserstack.com/wd/hub')
-      .withCapabilities(capabilities)
-      .build();
+    .usingServer('http://hub.browserstack.com/wd/hub')
+    .withCapabilities(sessions[0])
+    .build();
   }
 
   // Catch Error in SE Driver Launch (Attempt Screenshot if Possible)
   // FIXME: This still runs after the tests have begun. It shouldn't (or it should add the testcase name)
   process.on('uncaughtException', function(err) {
-    console.log('\nError setting up test suite... '.red + err);
-    
+    console.log('\n\tError setting up test suite... '.red + err);
+
     if (driver) {
       driver.takeScreenshot().then(function(screenshot) {
         var now       = month + '-' + day +'-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
         var filepath  = './error/screens/';
         var filename  = 'suite-setup-' + now + '.png';
-        fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));    
+        fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));
       });
     }
   });
 
   driver.get(HOST).then(function() {
     console.log('Configuring Test Environment. Navigating to: ' + HOST.yellow);
+    console.log('Using the following settings: ' + sessions[0].yellow);
   }).then(done);
 });
 
 
 // Tests
 describe('Routes', function() {
-  
+
   it('should not contain trip durations in complicated fractions of hours', function(done) {
     this.timeout(RUN_TIMEOUT);
-    
+
     var TRIP = SCHEDULES + locations["TOR"] + '/' + locations["MTL"]
-    
-    driver.get(TRIP).then(function() {
-      driver.findElements(webdriver.By.className('duration')).then(function(durations) {
-        async.forEach(durations, function(duration, step) {
-        
-          duration.isDisplayed().then(function() {
-            return duration.getAttribute('innerHTML');
-          }).then(function(duration_text) {
-            var dot_location = duration_text.indexOf('.');
-            var next_character = duration_text.substring(dot_location + 1, dot_location + 2);
-            if (dot_location !== -1) {
-              assert(next_character === "5", '"' + duration_text + '"' + ' contained a fraction that 60 minutes is not divisible by');
-            }
-            step();
-          });
+
+    driver.get(TRIP);
+    driver.findElements(webdriver.By.className('duration')).then(function(durations) {
+      async.forEach(durations, function(duration, step) {
+
+        duration.isDisplayed().then(function() {
+          return duration.getAttribute('innerHTML');
+        }).then(function(duration_text) {
+          var dot_location = duration_text.indexOf('.');
+          var next_character = duration_text.substring(dot_location + 1, dot_location + 2);
+          if (dot_location !== -1) {
+            assert(next_character === "5", '"' + duration_text + '"' + ' contained a fraction that 60 minutes is not divisible by');
+          }
+          step();
         });
       });
     }).then(done);
   });
-  
+
   it('should not render destination names with unexpected characters', function(done) {
     this.timeout(RUN_TIMEOUT);
 
     // TODO: run this test for a few consecutive days: today, tomorrow, etc (wrap everything in a forEach???)
     var TRIP = SCHEDULES + locations['PRA'] + '/' + locations['MUN'] + '#date=';
 
-    driver.get(TRIP + TODAY).then(function() {
-      driver.findElements(webdriver.By.className('location')).then(function(locations) {
-        async.forEach(locations, function(loc, step) {
-          
-          loc.isDisplayed().then(function() {
-            return loc.getAttribute('innerHTML');
-          }).then(function(location_text) {
-            var underscore_location = location_text.indexOf('_');
-            assert(underscore_location === -1, '"' + location_text + '"' + ' had one or more unexpected _ characters');
-            step();
-          });
+    driver.get(TRIP + TODAY);
+    driver.findElements(webdriver.By.className('location')).then(function(locations) {
+      async.forEach(locations, function(loc, step) {
+
+        loc.isDisplayed().then(function() {
+          return loc.getAttribute('innerHTML');
+        }).then(function(location_text) {
+          var underscore_location = location_text.indexOf('_');
+          assert(underscore_location === -1, '"' + location_text + '"' + ' had one or more unexpected _ characters');
+          step();
         });
       });
     }).then(done);
   });
- 
+
   it('destinations should not end with a period', function(done) {
     this.timeout(RUN_TIMEOUT);
-    
+
     var TRIP = SCHEDULES + locations['WASH'] + '/' + locations['NYC'] + '#date=';
 
-    driver.get(TRIP + TODAY).then(function() {
-      driver.findElements(webdriver.By.className('location')).then(function(locations) {
-        async.forEach(locations, function(loc, step) {
+    driver.get(TRIP + TODAY);
+    driver.findElements(webdriver.By.className('location')).then(function(locations) {
+      async.forEach(locations, function(loc, step) {
 
-          loc.isDisplayed().then(function() {
-            return loc.getAttribute('innerHTML');
-          }).then(function(location_text) {
-            var loc_length = location_text.length;
-            var last_character = location_text.substring(loc_length - 1);
-            if (!(strEndsWith(location_text, ' st.') || (strEndsWith(location_text, ' ave.')))) {
-              assert(last_character !== '.', '"' + location_text + '"' + ' ended in an unexpected period');
-            }
-            step();
-          });
+        loc.isDisplayed().then(function() {
+          return loc.getAttribute('innerHTML');
+        }).then(function(location_text) {
+          var loc_length = location_text.length;
+          var last_character = location_text.substring(loc_length - 1);
+          if (!(strEndsWith(location_text, ' st.') || (strEndsWith(location_text, ' ave.')))) {
+            assert(last_character !== '.', '"' + location_text + '"' + ' ended in an unexpected period');
+          }
+          step();
         });
       });
     }).then(done);
   });
 
 });
+
 
 // Test Suite Teardown
 after(function(done) {
@@ -175,4 +162,3 @@ after(function(done) {
   });
   driver.quit().then(done);
 });
-
