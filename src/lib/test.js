@@ -33,12 +33,29 @@ function strEndsWith(str, suffix) {
   return str.toLowerCase().slice(-suffix.toLowerCase().length) === suffix.toLowerCase();
 }
 
+function callback(stream) {
+  console.log("Exiting.")
+}
 
-// Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
-process.on('SIGINT', function() {
-  console.log('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red);
+
+// Ensure Kill webdriver on Force Quit (Mac/Linux Only)
+process.on('SIGINT', function(callback) {
+  console.error('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red);
   if (driver) { driver.quit() }
   process.exit();
+});
+
+// Catch exceptions from SE and attempt a screenshot where possible
+process.on('uncaughtException', function(err, callback) {
+  console.error('\n\tError... '.red + err);
+
+  if (driver) {
+    driver.takeScreenshot().then(function(screenshot) {
+      var filepath  = './error/screens/';
+      var filename  = 'suite-setup-' + (new Date).toISOString() + '.png';
+      fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));
+    });
+  }
 });
 
 
@@ -58,24 +75,9 @@ describe('Routes', function() {
         .withCapabilities(sessions[0])
         .build();
     }
-
-    // Catch Error in SE Driver Launch (Attempt Screenshot if Possible)
-    // FIXME: This still runs after the tests have begun. It shouldn't (or it should add the testcase name)
-    process.on('uncaughtException', function(err) {
-      console.log('\n\tError setting up test suite... '.red + err);
-
-      if (driver) {
-        driver.takeScreenshot().then(function(screenshot) {
-          var filepath  = './error/screens/';
-          var filename  = 'suite-setup-' + (new Date).toISOString() + '.png';
-          fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));
-        });
-      }
-    });
-
     driver.get(host).then(function() {
-      console.log('Configuring Test Environment. Navigating to: ' + host.yellow);
-      console.log('Using the following settings: ' + sessions[0].yellow);
+      console.log('Configuring Test Environment. Navigating to: ' + host.yellow +
+                      '\n' + "Using the following settings: %j" + sessions[0]);
     }).then(done);
   });
 
@@ -96,7 +98,7 @@ describe('Routes', function() {
           var dot_location = duration_text.indexOf('.');
           var next_character = duration_text.substring(dot_location + 1, dot_location + 2);
           if (dot_location !== -1) {
-            assert(next_character === "5", '"' + duration_text + '"' + ' contained a fraction that 60 minutes is not divisible by');
+            assert.equal(next_character, "5", '"' + duration_text + '"' + ' contained a fraction that 60 minutes is not divisible by');
           }
           step();
         });
@@ -148,13 +150,11 @@ describe('Routes', function() {
     }).then(done);
   });
 
-  // Test Suite Teardown
+
   after(function(done) {
     this.timeout(STOP_TIMEOUT);
-
-    process.on('uncaughtException', function(err) {
-      driver.quit();
-    });
+    process.removeListener('SIGINT', callback);
+    process.removeListener('uncaughtException', callback);
     driver.quit().then(done);
   });
 
