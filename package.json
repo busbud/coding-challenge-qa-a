@@ -7,12 +7,9 @@
   },
   "dependencies": {
     "mocha": "*",
-    "assert": "*",
-    "fs": "*",
     "webdriver": "*",
     "browserstack-webdriver": "*",
     "async": "*",
-    "colors": "*",
-    "lodash": "*"
+    "colors": "*"
   }
 }
