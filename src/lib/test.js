@@ -1,20 +1,19 @@
-#!/usr/bin/env node
-
 var assert    = require('assert');
 var fs        = require('fs');
 
 var async     = require('async');
 var colors    = require('colors');
-var sleep     = require('sleep');
-var _         = require('lodash'); //not used
 
-var conf      = require('../../conf.json');
-var locations = require('../../locations.json');
-var webdriver = require('../../driver.js');
-var sessions  = require('../../capabilities.js');
+var sessions  = require(__dirname + '/../../capabilities.js');
+var webdriver = require(__dirname + '/../../driver.js');
+var conf      = require(__dirname + '/../../conf.json');
+var locations = require(__dirname + '/../../locations.json');
 
-// Imported Variables
-var HOST = conf['host'] || 'http://busbud.com';
+
+// Imported server config
+var host    = conf.host || 'http://busbud.com';
+var server  = conf.remote_server;
+var SCHEDULES_URL = conf.schedule_url;
 
 // Timeouts
 var START_TIMEOUT = 20000;
@@ -22,71 +21,70 @@ var RUN_TIMEOUT   = 15000;
 var STOP_TIMEOUT  = 5000;
 
 // Schedules, Date & Time
-var d     = new Date;
-var year  = d.getFullYear();
-var month = d.getMonth() + 1;
-var day   = d.getDate();
-var TODAY = year + '-' + month + '-' + day;
-var MONTH = year + '-' + month + '-';
-var SCHEDULES = "https://secure.busbud.com/en/bus-schedules/";
+var d       = new Date;
+var year    = d.getFullYear();
+var month   = d.getMonth() + 1;
+var day     = d.getDate();
+var MONTH   = [year, month].join('-');
+var TODAY   = [year, month, day].join('-')
 
 // Common Functions
 function strEndsWith(str, suffix) {
-  return str.toLowerCase().match(suffix.toLowerCase()+"$")==suffix.toLowerCase();
+  return str.toLowerCase().slice(-suffix.toLowerCase().length) === suffix.toLowerCase();
 }
 
 
 // Ensure Kill Web Drivers on Force Quit (Mac/Linux Only)
 process.on('SIGINT', function() {
   console.log('\nCaught Unexpected Interrupt Signal. Force Quitting...\n'.red);
-  driver.quit();
+  if (driver) { driver.quit() }
   process.exit();
-});
-
-
-before(function(done) {
-  this.timeout(START_TIMEOUT);
-
-  if (conf['local']) {
-    driver = new webdriver.Builder()
-    .withCapabilities(sessions[0])
-    .build();
-  } else {
-    driver = new webdriver.Builder()
-    .usingServer('http://hub.browserstack.com/wd/hub')
-    .withCapabilities(sessions[0])
-    .build();
-  }
-
-  // Catch Error in SE Driver Launch (Attempt Screenshot if Possible)
-  // FIXME: This still runs after the tests have begun. It shouldn't (or it should add the testcase name)
-  process.on('uncaughtException', function(err) {
-    console.log('\n\tError setting up test suite... '.red + err);
-
-    if (driver) {
-      driver.takeScreenshot().then(function(screenshot) {
-        var now       = month + '-' + day +'-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
-        var filepath  = './error/screens/';
-        var filename  = 'suite-setup-' + now + '.png';
-        fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));
-      });
-    }
-  });
-
-  driver.get(HOST).then(function() {
-    console.log('Configuring Test Environment. Navigating to: ' + HOST.yellow);
-    console.log('Using the following settings: ' + sessions[0].yellow);
-  }).then(done);
 });
 
 
 // Tests
 describe('Routes', function() {
 
+  before(function(done) {
+    this.timeout(START_TIMEOUT);
+
+    if (conf['local']) {
+      driver = new webdriver.Builder()
+        .withCapabilities(sessions[0])
+        .build();
+    } else {
+      driver = new webdriver.Builder()
+        .usingServer(server)
+        .withCapabilities(sessions[0])
+        .build();
+    }
+
+    // Catch Error in SE Driver Launch (Attempt Screenshot if Possible)
+    // FIXME: This still runs after the tests have begun. It shouldn't (or it should add the testcase name)
+    process.on('uncaughtException', function(err) {
+      console.log('\n\tError setting up test suite... '.red + err);
+
+      if (driver) {
+        driver.takeScreenshot().then(function(screenshot) {
+          var filepath  = './error/screens/';
+          var filename  = 'suite-setup-' + (new Date).toISOString() + '.png';
+          fs.writeFileSync(filepath + filename, new Buffer(screenshot, 'base64'));
+        });
+      }
+    });
+
+    driver.get(host).then(function() {
+      console.log('Configuring Test Environment. Navigating to: ' + host.yellow);
+      console.log('Using the following settings: ' + sessions[0].yellow);
+    }).then(done);
+  });
+
+
+
   it('should not contain trip durations in complicated fractions of hours', function(done) {
     this.timeout(RUN_TIMEOUT);
 
-    var TRIP = SCHEDULES + locations["TOR"] + '/' + locations["MTL"]
+    var TRIP = SCHEDULES_URL + locations["TOR"] + '/' + locations["MTL"]
 
     driver.get(TRIP);
     driver.findElements(webdriver.By.className('duration')).then(function(durations) {
@@ -110,7 +108,7 @@ describe('Routes', function() {
     this.timeout(RUN_TIMEOUT);
 
     // TODO: run this test for a few consecutive days: today, tomorrow, etc (wrap everything in a forEach???)
-    var TRIP = SCHEDULES + locations['PRA'] + '/' + locations['MUN'] + '#date=';
+    var TRIP = SCHEDULES_URL + locations['PRA'] + '/' + locations['MUN'] + '#date=';
 
     driver.get(TRIP + TODAY);
     driver.findElements(webdriver.By.className('location')).then(function(locations) {
@@ -120,7 +118,7 @@ describe('Routes', function() {
           return loc.getAttribute('innerHTML');
         }).then(function(location_text) {
           var underscore_location = location_text.indexOf('_');
-          assert(underscore_location === -1, '"' + location_text + '"' + ' had one or more unexpected _ characters');
+          assert.equal(underscore_location, -1, '"' + location_text + '"' + ' had one or more unexpected _ characters');
           step();
         });
       });
@@ -130,7 +128,7 @@ describe('Routes', function() {
   it('destinations should not end with a period', function(done) {
     this.timeout(RUN_TIMEOUT);
 
-    var TRIP = SCHEDULES + locations['WASH'] + '/' + locations['NYC'] + '#date=';
+    var TRIP = SCHEDULES_URL + locations['WASH'] + '/' + locations['NYC'] + '#date=';
 
     driver.get(TRIP + TODAY);
     driver.findElements(webdriver.By.className('location')).then(function(locations) {
@@ -142,7 +140,7 @@ describe('Routes', function() {
           var loc_length = location_text.length;
           var last_character = location_text.substring(loc_length - 1);
           if (!(strEndsWith(location_text, ' st.') || (strEndsWith(location_text, ' ave.')))) {
-            assert(last_character !== '.', '"' + location_text + '"' + ' ended in an unexpected period');
+            assert.equal(last_character, '.', '"' + location_text + '"' + ' ended in an unexpected period');
           }
           step();
         });
@@ -150,15 +148,14 @@ describe('Routes', function() {
     }).then(done);
   });
 
-});
+  // Test Suite Teardown
+  after(function(done) {
+    this.timeout(STOP_TIMEOUT);
 
-
-// Test Suite Teardown
-after(function(done) {
-  this.timeout(STOP_TIMEOUT);
-
-  process.on('uncaughtException', function(err) {
-    driver.quit();
+    process.on('uncaughtException', function(err) {
+      driver.quit();
+    });
+    driver.quit().then(done);
   });
-  driver.quit().then(done);
+
 });
