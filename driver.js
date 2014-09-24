@@ -4,7 +4,7 @@ var conf = require('./conf.json');
 
 var webdriver;
 
-if (conf['local']) {
+if (conf.local) {
   webdriver = require('selenium-webdriver');
 } else {
   webdriver = require('browserstack-webdriver');

@@ -1,9 +1,9 @@
 {
-  "host"          : "http://busbud.com",
-  "schedule_url"  : "https://secure.busbud.com/en/bus-schedules/",
-  "local"         : false,
-  "remote_server" : "http://hub.browserstack.com/wd/hub",
-  "remote_index"  : 1,
+  "host": "http://busbud.com",
+  "schedule_url": "https://secure.busbud.com/en/bus-schedules/",
+  "local": true,
+  "remote_server": "http://hub.browserstack.com/wd/hub",
+  "remote_index": 1,
   "remote_settings": [
     {
       "os": "Windows",
