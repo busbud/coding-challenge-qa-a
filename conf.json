@@ -1,6 +1,9 @@
 {
-  "host" : "http://busbud.com",
-  "local" : true,
+  "host"          : "http://busbud.com",
+  "schedule_url"  : "https://secure.busbud.com/en/bus-schedules/",
+  "local"         : false,
+  "remote_server" : "http://hub.browserstack.com/wd/hub",
+  "remote_index"  : 1,
   "remote_settings": [
     {
       "os": "Windows",
@@ -17,14 +20,12 @@
     },
     {
       "os": "OS X",
+      "os_version" : "Mavericks",
+      "browserName": "Safari",
       "resolution": "1024x768"
-    },
-    {
-      "platform" : "MAC",
-      "browserName": "iPhone",
-      "device": "iPhone 5"
     }
   ],
+  "local_index" : 0,
   "local_settings" : [
     {
       "browserName": "chrome"
