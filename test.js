@@ -16,8 +16,8 @@ var server  = conf.remote_server;
 var SCHEDULES_URL = conf.schedule_url;
 
 // Timeouts
-var START_TIMEOUT = 20000;
-var TEST_TIMEOUT  = 30000;
+var START_TIMEOUT = 25000;
+var TEST_TIMEOUT  = 25000;
 var STOP_TIMEOUT  = 5000;
 
 // Schedules, Date & Time
@@ -26,17 +26,19 @@ var year    = d.getFullYear();
 var month   = d.getMonth() + 1;
 var day     = d.getDate();
 var MONTH   = [year, month].join('-');
-var TODAY   = [year, month, day].join('-')
-var TMRW    = [year, month, day + 1].join('-')
+var TODAY   = [year, month, day].join('-');
+var TMRW    = [year, month, day + 1].join('-');
 
 // Common Functions
 function strEndsWith(str, suffix) {
   return str.toLowerCase().slice(-suffix.toLowerCase().length) === suffix.toLowerCase();
 }
 function callback(stream) {
-  console.log("Exiting.")
+  console.log("Exiting.");
 }
-
+function trip_url(from, to, on) {
+  return SCHEDULES_URL + locations[from] + '/' + locations[to] + '#date=' + on;
+}
 
 // Kill webdriver on force quit (*NIX Only)
 process.on('SIGINT', function(callback) {
@@ -87,9 +89,9 @@ describe('Routes', function() {
   it('should not contain trip durations in complicated fractions of hours', function(done) {
     this.timeout(TEST_TIMEOUT);
 
-    var TRIP = SCHEDULES_URL + locations["TOR"] + '/' + locations["MTL"] + '#date=';
+    var TRIP = trip_url('TOR', 'MTL', TMRW);
 
-    driver.get(TRIP + TMRW);
+    driver.get(TRIP);
     driver.findElements(webdriver.By.className('duration')).then(function(durations) {
       async.forEach(durations, function(duration, step) {
 
@@ -111,7 +113,7 @@ describe('Routes', function() {
   it('should not render destination names with unexpected characters', function(done) {
     this.timeout(TEST_TIMEOUT);
 
-    var TRIP = SCHEDULES_URL + locations['PRA'] + '/' + locations['MUN'] + '#date=';
+    var TRIP = trip_url('PRA', 'MUN', TMRW);
 
     driver.get(TRIP + TMRW);
     driver.findElements(webdriver.By.className('location')).then(function(locations) {
@@ -132,9 +134,9 @@ describe('Routes', function() {
   it('destinations should not end with a period', function(done) {
     this.timeout(TEST_TIMEOUT);
 
-    var TRIP = SCHEDULES_URL + locations['WASH'] + '/' + locations['NYC'] + '#date=';
+    var TRIP = trip_url('WASH', 'NYC', TMRW);
 
-    driver.get(TRIP + TMRW);
+    driver.get(TRIP);
     driver.findElements(webdriver.By.className('location')).then(function(locations) {
       async.forEach(locations, function(loc, step) {
 
