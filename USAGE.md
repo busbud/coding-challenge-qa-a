@@ -15,7 +15,20 @@ Settings are defined in conf.json as follows:
 * local_settings (array) -> list of capabilities for local environment
 * local_index (integer) -> which list item from local_settings list to use for current test
 
-Ensure that mocha resides in your path. See package.json for dependencies.
+Ensure that mocha resides in your path. See package.json for dependencies. Further, ensure for local tests the system is configured with the drivers you specified (i.e., chromedriver, etc)
+
+
+## Description:
+
+Built on nodeJS using Mocha test framework and the asset unit test library to return the test result. All tests are currently run through webdriver (i.e., there is no API validation or load testing being performed).
+
+Tests are configured in conf.json and currently run via one specified capability at a time.
+
+Experimented a bit with running parallel tests across multiple platforms, but browserStack limits this to two (for a free account). Also, webdriver is a global, so it will need its own process.
+
+This logic probably better resides outside of test.js, calling test.js on each item in remote_settings (or local_settings).
+
+Scaling project up to handle parallelization will be useful for load testing, and to simulate real user workflows all interacting with the site at the same time.
 
 
 ## Architecture:
