@@ -66,7 +66,7 @@ process.on('uncaughtException', function(err, callback) {
 before(function(done) {
   this.timeout(START_TIMEOUT);
 
-  if (conf['local']) {
+  if (conf.local) {
     driver = new webdriver.Builder()
       .withCapabilities(session)
       .build();
