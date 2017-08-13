@@ -1,15 +1,13 @@
 # QA Coding Challenge
 
-Find three issues on Busbud.com and write the automated regression tests that reproduce the failure across one or more browsers.
+Find three (major or minor) issues on Busbud.com and write the automated regression tests that reproduce the failure across one or more browsers.
 
 ## Functional requirements
 
 * Tests are run on the command line using `npm test`
 * Tests are run against a configurable host, with `www.busbud.com` as the default
-* Tests can be configured to run various browser and OS combinations against a testing service (SauceLabs or BrowserStack), at a minimum the following should be included
-  * IE10, Windows 8
-  * Chrome latest, Windows 8
-  * Safari latest, Mac OS latest
+* Tests can be configured to run various browser and OS combinations, at a minimum the following should be included
+  * Any of Chrome latest, Firefox latest, or Safari latest on Mac OS
 * Testing service credentials are passed as environment variables
 
 ## Non-functional requirements
@@ -21,6 +19,7 @@ Find three issues on Busbud.com and write the automated regression tests that re
 
 ### Bonus
 
+* Tests run against a testing service (SauceLabs, BrowserStack or similar)
 * Tests run against mobile browsers
 * Tests capture screenshots of failures
 
@@ -34,5 +33,5 @@ Find three issues on Busbud.com and write the automated regression tests that re
 
 ## References
 
-* https://docs.saucelabs.com/tutorials/node-js/
+* https://wiki.saucelabs.com/display/DOCS/Instant+Selenium+Node.js+Tests
 * http://www.browserstack.com/automate/node
