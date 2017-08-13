@@ -12,6 +12,7 @@ Find three (major or minor) issues on Busbud.com and write the automated regress
 
 ## Non-functional requirements
 
+* Challenge is submitted as pull request against this repo ([fork it](https://help.github.com/articles/fork-a-repo/) and [create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)).
 * Tests are written in javascript, using NodeJS
 * Tests are written against a BDD framework like `mocha`
 * Tests cases describe expected behavior
