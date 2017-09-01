@@ -1,0 +1,24 @@
+{
+  "name": "coding-challenge-qa-a",
+  "version": "1.0.0",
+  "description": "Find three (major or minor) issues on Busbud.com and write the automated regression tests that reproduce the failure across one or more browsers.",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "./node_modules/.bin/selenium-standalone install --config=./selenium-config.js",
+    "start": "./node_modules/.bin/selenium-standalone start --config=./selenium-config.js",
+    "test": "./node_modules/.bin/wdio wdio.conf.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/verotremblay/coding-challenge-qa-a.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/verotremblay/coding-challenge-qa-a/issues"
+  },
+  "homepage": "https://github.com/verotremblay/coding-challenge-qa-a#readme",
+  "devDependencies": {
+    "wdio-mocha-framework": "^0.5.11"
+  }
+}
