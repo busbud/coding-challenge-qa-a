@@ -11,6 +11,7 @@ describe('When clicking on the Instagram link', function() {
 		const lastTabId = browser.getTabIds()[browser.getTabIds().length - 1];
 		browser.switchTab(lastTabId);
 
+		// This test is going to fail since it's redirected to Page Not Found
 		assert(browser.getUrl() === 'https://www.instagram.com/busbudapp/');
 	});
 

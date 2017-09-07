@@ -8,6 +8,7 @@ describe('When clicking on Busbud logo in help center', function() {
 
 		browser.pause(3000);
 
+		// This test is going to fail since it is expected to reach the homepage
 		assert(browser.getUrl() === 'https://www.busbud.com/en');
 	});
 });
