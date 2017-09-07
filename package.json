@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/verotremblay/coding-challenge-qa-a#readme",
   "devDependencies": {
+    "selenium-standalone": "^6.9.0",
+    "wdio": "^1.0.0",
     "wdio-mocha-framework": "^0.5.11"
   }
 }
